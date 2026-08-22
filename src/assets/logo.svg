@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Red/Crimson Gradients -->
+    <linearGradient id="sspiRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cc1111" />
+      <stop offset="50%" stop-color="#aa0000" />
+      <stop offset="100%" stop-color="#880000" />
+    </linearGradient>
+
+    <linearGradient id="sspiInnerRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#990044" />
+      <stop offset="100%" stop-color="#770033" />
+    </linearGradient>
+
+    <!-- Gold/Yellow Gradients -->
+    <linearGradient id="sspiGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff8b3" />
+      <stop offset="40%" stop-color="#ffe600" />
+      <stop offset="100%" stop-color="#d4a000" />
+    </linearGradient>
+
+    <linearGradient id="sspiYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffff44" />
+      <stop offset="100%" stop-color="#ffcc00" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="badgeShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <g filter="url(#badgeShadow)">
+    <!-- Outer Red Boundary Circle -->
+    <circle cx="250" cy="225" r="200" fill="url(#sspiRed)" />
+
+    <!-- Outer Gold Ring Layer -->
+    <circle cx="250" cy="225" r="192" fill="url(#sspiGold)" />
+
+    <!-- Text Path Circular Area (Yellow Band) -->
+    <circle cx="250" cy="225" r="185" fill="#fff9c4" stroke="url(#sspiRed)" stroke-width="4" />
+
+    <!-- Inner Circle Border -->
+    <circle cx="250" cy="225" r="135" fill="url(#sspiRed)" stroke="url(#sspiGold)" stroke-width="4" />
+
+    <!-- Deep Magenta/Red Inner Background -->
+    <circle cx="250" cy="225" r="131" fill="url(#sspiInnerRed)" />
+
+    <!-- Map Silhouette Background (Yellow) -->
+    <path d="M 180 180 Q 200 130 250 140 Q 300 130 330 160 Q 350 200 320 240 Q 290 280 240 270 Q 190 280 170 230 Z" 
+          fill="url(#sspiYellow)" opacity="0.95" />
+
+    <!-- Open Book at Base of Lamp -->
+    <g transform="translate(250, 260)">
+      <!-- Left Page -->
+      <path d="M 0 -5 Q -25 -25 -50 -15 L -50 15 Q -25 5 0 25 Z" fill="#ffffff" stroke="#990000" stroke-width="3" />
+      <!-- Right Page -->
+      <path d="M 0 -5 Q 25 -25 50 -15 L 50 15 Q 25 5 0 25 Z" fill="#ffffff" stroke="#990000" stroke-width="3" />
+      <!-- Book Spine -->
+      <line x1="0" y1="-5" x2="0" y2="25" stroke="#990000" stroke-width="4" />
+    </g>
+
+    <!-- Golden Diya (Lamp) -->
+    <g transform="translate(250, 195)">
+      <!-- Diya Stand / Stem -->
+      <path d="M -8 35 L 8 35 L 5 15 L -5 15 Z" fill="url(#sspiGold)" stroke="#770000" stroke-width="1.5" />
+      <path d="M -15 38 L 15 38 L 12 34 L -12 34 Z" fill="url(#sspiGold)" stroke="#770000" stroke-width="1.5" />
+
+      <!-- Diya Bowl -->
+      <path d="M -30 15 C -30 -5 30 -5 30 15 C 20 25 -20 25 -30 15 Z" fill="url(#sspiGold)" stroke="#770000" stroke-width="2" />
+      <ellipse cx="0" cy="8" rx="25" ry="6" fill="#fff59d" stroke="#d4a000" stroke-width="1.5" />
+
+      <!-- Lamp Stem Rod -->
+      <line x1="0" y1="5" x2="0" y2="-45" stroke="url(#sspiGold)" stroke-width="5" />
+      <!-- Small Hanging Beads on Rod -->
+      <circle cx="0" cy="-15" r="4" fill="url(#sspiGold)" />
+      <circle cx="0" cy="-30" r="4" fill="url(#sspiGold)" />
+
+      <!-- Outer Flame -->
+      <path d="M 0 -48 Q 14 -65 0 -90 Q -14 -65 0 -48 Z" fill="#ffee58" stroke="#f57f17" stroke-width="2" />
+      <!-- Inner Flame -->
+      <path d="M 0 -52 Q 8 -64 0 -80 Q -8 -64 0 -52 Z" fill="#ffffff" />
+    </g>
+
+    <!-- Circular Text Arc for English Name -->
+    <path id="circleTextPath" d="M 80 225 A 170 170 0 1 1 420 225" fill="none" />
+
+    <text font-family="'Inter', 'Arial Black', sans-serif" font-size="25" font-weight="900" fill="#aa0000">
+      <textPath href="#circleTextPath" startOffset="50%" text-anchor="middle" letter-spacing="1">
+        Shri Shivaji Polytechnic Institute
+      </textPath>
+    </text>
+
+    <!-- Bottom Red Ribbon Banner -->
+    <g transform="translate(250, 400)">
+      <!-- Left Ribbon Tail -->
+      <path d="M -180 -25 L -220 -40 L -205 -15 L -225 10 L -170 0 Z" fill="#880000" />
+      <!-- Right Ribbon Tail -->
+      <path d="M 180 -25 L 220 -40 L 205 -15 L 225 10 L 170 0 Z" fill="#880000" />
+
+      <!-- Main Ribbon Body -->
+      <path d="M -190 -30 Q 0 -5 190 -30 Q 200 15 180 25 Q 0 50 -180 25 Q -200 15 -190 -30 Z" 
+            fill="url(#sspiRed)" stroke="url(#sspiGold)" stroke-width="3" />
+
+      <!-- Sanskrit Motto: तमसो मा ज्योतिर्गमय -->
+      <text x="0" y="8" font-family="'Mangal', 'Kohinoor Devanagari', 'Arial', sans-serif" 
+            font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+        तमसो मा ज्योतिर्गमय
+      </text>
+    </g>
+  </g>
+</svg>
