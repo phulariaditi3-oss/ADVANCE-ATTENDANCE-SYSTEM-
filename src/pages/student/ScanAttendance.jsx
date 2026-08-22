@@ -6,10 +6,9 @@ import { useToast } from '../../contexts/ToastContext';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { isExpired, formatTime } from '../../lib/utils';
 import { COLLEGE_RADIUS_METERS, MAX_GPS_ACCURACY_METERS } from '../../lib/constants';
-import FaceCapture from '../../components/FaceCapture';
 import {
   ScanLine, MapPin, CheckCircle2, XCircle, ArrowLeft,
-  Camera, Shield, Sparkles, Radio, Keyboard, Clock, Building2, User, ScanFace
+  Camera, Shield, Sparkles, Radio, Keyboard, Clock, Building2, User
 } from 'lucide-react';
 
 export default function ScanAttendance() {
@@ -25,9 +24,7 @@ export default function ScanAttendance() {
   const [locationDist, setLocationDist] = useState(null);
   const [gpsAccuracy, setGpsAccuracy] = useState(null);
   const [cameraError, setCameraError] = useState('');
-  const [faceRegistered, setFaceRegistered] = useState(true);
   const [pendingLocation, setPendingLocation] = useState(null); // { lat, lng, accuracy }
-  const [verifyingFace, setVerifyingFace] = useState(false);
 
   const validateToken = async (rawToken) => {
     if (!rawToken || !rawToken.trim()) return;
@@ -79,9 +76,7 @@ export default function ScanAttendance() {
         throw new Error('Attendance has already been marked for this session.');
       }
 
-      // Check the student has registered their face before letting them proceed
-      const { data: faceStatus } = await supabase.rpc('face_registration_status', { p_student_id: user.id });
-      setFaceRegistered(!!faceStatus?.registered);
+
 
       setSessionData(session);
       setStatus('session-found');
@@ -93,9 +88,11 @@ export default function ScanAttendance() {
     }
   };
 
-  const handleScan = (text) => {
+  const handleScan = (detectedCodes) => {
     if (status !== 'idle') return;
-    validateToken(text);
+    if (detectedCodes && detectedCodes.length > 0) {
+      validateToken(detectedCodes[0].rawValue);
+    }
   };
 
   const handleManualSubmit = (e) => {
@@ -105,11 +102,6 @@ export default function ScanAttendance() {
   };
 
   const handleMarkAttendance = () => {
-    if (!faceRegistered) {
-      setStatus('error');
-      setErrorMsg('Please register your face before marking attendance.');
-      return;
-    }
 
     if (!('geolocation' in navigator)) {
       setStatus('error');
@@ -130,11 +122,8 @@ export default function ScanAttendance() {
           return;
         }
 
-        // Location looks good — move on to face verification before we ever
-        // touch the database. The actual attendance insert only happens
-        // after a successful face match (see handleFaceCapture).
         setPendingLocation({ lat: latitude, lng: longitude, accuracy });
-        setStatus('face-verification');
+        handleAttendanceSubmit({ lat: latitude, lng: longitude, accuracy });
       },
       (err) => {
         setStatus('error');
@@ -146,23 +135,20 @@ export default function ScanAttendance() {
     );
   };
 
-  const handleFaceCapture = async (descriptor) => {
-    if (!pendingLocation || !sessionData) return;
-    setVerifyingFace(true);
+  const handleAttendanceSubmit = async (location) => {
+    if (!location || !sessionData) return;
     try {
       // Single secure server-side call: validates token, expiry, student's own
-      // department/year/semester, face match against the authenticated
-      // student's own stored embedding, GPS radius, and duplicate marking —
+      // department/year/semester, GPS radius, and duplicate marking —
       // all inside one SECURITY DEFINER function so nothing can be spoofed
       // by tampering with intermediate client state.
       const { data: rpcData, error: markErr } = await supabase.rpc('mark_attendance', {
         p_session_id: sessionData.id,
         p_student_id: user.id,
         p_token: sessionData.qr_token,
-        p_lat: pendingLocation.lat,
-        p_lng: pendingLocation.lng,
-        p_accuracy: pendingLocation.accuracy,
-        p_face_descriptor: descriptor,
+        p_lat: location.lat,
+        p_lng: location.lng,
+        p_accuracy: location.accuracy,
       });
 
       if (markErr) throw markErr;
@@ -173,9 +159,7 @@ export default function ScanAttendance() {
       toast.success(`Attendance marked for ${sessionData.subject_name}`);
     } catch (err) {
       setStatus('error');
-      setErrorMsg(err.message || 'Face verification failed. Attendance was not marked.');
-    } finally {
-      setVerifyingFace(false);
+      setErrorMsg(err.message || 'Verification failed. Attendance was not marked.');
     }
   };
 
@@ -230,13 +214,12 @@ export default function ScanAttendance() {
 
               <div className="relative rounded-2xl overflow-hidden bg-surface-900 border-2 border-surface-200">
                 <Scanner 
-                  onResult={(text) => handleScan(text)} 
-                  onError={(err) => setCameraError('Camera permission is required to scan the QR code. You can enter the attendance token manually.')}
-                  options={{
-                    delayBetweenScanAttempts: 1000,
-                  }}
+                  onScan={handleScan} 
+                  onError={(err) => setCameraError('Camera unavailable or permission denied. Please allow camera access or enter the token manually.')}
+                  scanDelay={1000}
+                  components={{ tracker: true }}
                   styles={{
-                    container: { paddingBottom: '100%' },
+                    container: { width: '100%', aspectRatio: '1/1' },
                   }}
                 />
                 
@@ -254,7 +237,13 @@ export default function ScanAttendance() {
                     <div className="w-12 h-12 rounded-full bg-surface-800 flex items-center justify-center text-surface-400 mb-3">
                       <Camera size={24} />
                     </div>
-                    <p className="text-sm font-bold text-white max-w-[200px]">{cameraError}</p>
+                    <p className="text-sm font-bold text-white max-w-[200px] mb-4">{cameraError}</p>
+                    <button 
+                      onClick={() => setCameraError('')}
+                      className="px-4 py-2 bg-surface-800 text-white border border-surface-700 text-xs font-bold rounded-lg hover:bg-surface-700 transition"
+                    >
+                      Try Again
+                    </button>
                   </div>
                 )}
               </div>
@@ -370,20 +359,11 @@ export default function ScanAttendance() {
                 </div>
               </div>
 
-              {!faceRegistered && (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800">
-                  <ScanFace size={16} className="shrink-0 mt-0.5" />
-                  <p className="text-xs font-bold">
-                    You haven't registered your face yet.{' '}
-                    <Link to="/student/face-registration" className="underline">Register now</Link> before marking attendance.
-                  </p>
-                </div>
-              )}
+
 
               <div className="pt-4 mt-2 border-t border-surface-100">
                 <button
                   onClick={handleMarkAttendance}
-                  disabled={!faceRegistered}
                   className="btn-primary w-full justify-center py-3.5 text-sm disabled:opacity-50"
                 >
                   <MapPin size={16} /> Verify Location & Mark
@@ -412,26 +392,7 @@ export default function ScanAttendance() {
           </div>
         )}
 
-        {/* Face Verification */}
-        {status === 'face-verification' && (
-          <div className="w-full card p-8 flex flex-col items-center text-center border border-primary-100 shadow-lg gap-2">
-            <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-500 mb-1">
-              <ScanFace size={28} />
-            </div>
-            <h2 className="text-xl font-black text-surface-900">Verify it's you</h2>
-            <p className="text-sm font-bold text-surface-500 mb-2 max-w-[260px]">
-              Location confirmed. Look at the camera to complete attendance.
-            </p>
-            <FaceCapture
-              busy={verifyingFace}
-              onCapture={handleFaceCapture}
-              instruction="We compare this only against your own registered face — never anyone else's."
-            />
-            <button onClick={resetFlow} className="text-xs font-bold text-surface-500 hover:text-surface-900 transition mt-2">
-              Cancel
-            </button>
-          </div>
-        )}
+
 
         {/* Success */}
         {status === 'success' && sessionData && (

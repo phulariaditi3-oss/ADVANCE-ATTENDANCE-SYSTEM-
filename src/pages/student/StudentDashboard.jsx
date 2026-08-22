@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { calcAttendancePercentage } from '../../lib/utils';
 import { LOW_ATTENDANCE_THRESHOLD } from '../../lib/constants';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
-import { AlertCircle, ScanLine, CalendarClock, CheckCircle2, ScanFace } from 'lucide-react';
+import { AlertCircle, ScanLine, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const container = {
@@ -22,23 +22,11 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ attended: 0, total: 0, percentage: 0, absent: 0 });
   const [recentLogs, setRecentLogs] = useState([]);
-  const [faceRegistered, setFaceRegistered] = useState(true); // assume true until checked, to avoid flashing the banner
-
   useEffect(() => {
     if (user?.id) {
       fetchStudentStats();
-      fetchFaceStatus();
     }
   }, [user]);
-
-  const fetchFaceStatus = async () => {
-    try {
-      const { data } = await supabase.rpc('face_registration_status', { p_student_id: user.id });
-      setFaceRegistered(!!data?.registered);
-    } catch {
-      // Non-fatal — dashboard should still render if this check fails
-    }
-  };
 
   const fetchStudentStats = async () => {
     try {
@@ -116,24 +104,7 @@ export default function StudentDashboard() {
         </div>
       </motion.div>
 
-      {/* Face Registration Prompt */}
-      {!faceRegistered && (
-        <motion.div
-          variants={item}
-          className="flex items-start gap-3 px-5 py-4 rounded-2xl bg-primary-500 text-white shadow-[0_6px_20px_rgba(79,70,229,0.3)]"
-        >
-          <ScanFace className="shrink-0 mt-0.5" size={19} />
-          <div className="flex-1">
-            <p className="text-sm font-black">Face ID not registered</p>
-            <p className="text-xs mt-1 font-semibold opacity-90 leading-relaxed">
-              You need to register your face before you can scan and mark attendance.
-            </p>
-          </div>
-          <Link to="/student/face-registration" className="shrink-0 bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg text-xs font-black self-center">
-            Register Now
-          </Link>
-        </motion.div>
-      )}
+
 
       {/* Low Attendance Alert */}
       {isLowAttendance && (

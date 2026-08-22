@@ -10,7 +10,6 @@ const studentLinks = [
   { to: '/student',                  icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/student/scan',             icon: ScanLine,         label: 'Scan QR' },
   { to: '/student/history',          icon: History,          label: 'Attendance' },
-  { to: '/student/face-registration',icon: ScanFace,         label: 'Face ID' },
 ];
 
 export default function StudentNavbar() {

@@ -33,7 +33,6 @@ import TeacherLowAttendance from './pages/teacher/TeacherLowAttendance';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ScanAttendance from './pages/student/ScanAttendance';
 import AttendanceHistory from './pages/student/AttendanceHistory';
-import FaceRegistration from './pages/student/FaceRegistration';
 
 function AnimatedOutlet() {
   const location = useLocation();
@@ -164,7 +163,6 @@ export default function App() {
           <Route index element={<StudentDashboard />} />
           <Route path="scan" element={<ScanAttendance />} />
           <Route path="history" element={<AttendanceHistory />} />
-          <Route path="face-registration" element={<FaceRegistration />} />
         </Route>
 
         {/* Redirect Fallbacks */}

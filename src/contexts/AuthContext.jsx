@@ -129,6 +129,26 @@ export function AuthProvider({ children }) {
         return { success: false, error: 'Invalid password.' };
       }
 
+      // Check max 2 active sessions limit
+      let deviceSessionId = localStorage.getItem('sspi_device_session');
+      if (!deviceSessionId) {
+        deviceSessionId = crypto.randomUUID();
+        localStorage.setItem('sspi_device_session', deviceSessionId);
+      }
+
+      const { data: sessionData, error: sessionErr } = await supabase.rpc('student_login_check', {
+        p_student_id: student.id,
+        p_session_id: deviceSessionId
+      });
+
+      if (sessionErr) {
+        return { success: false, error: 'Failed to verify session limit.' };
+      }
+
+      if (sessionData && !sessionData.success) {
+        return { success: false, error: sessionData.message };
+      }
+
       const studentData = {
         id: student.id,
         name: student.name,
@@ -220,7 +240,21 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      const stored = localStorage.getItem('sspi_auth');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.role === 'student') {
+          const deviceSessionId = localStorage.getItem('sspi_device_session');
+          if (deviceSessionId) {
+            await supabase.rpc('student_logout', { p_session_id: deviceSessionId });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     setUser(null);
     setRole(null);
     localStorage.removeItem('sspi_auth');
