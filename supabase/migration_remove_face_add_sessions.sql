@@ -5,6 +5,7 @@
 
 -- 1. Remove Face Recognition functions and tables
 DROP FUNCTION IF EXISTS mark_attendance(UUID, UUID, TEXT, NUMERIC, NUMERIC, NUMERIC, DOUBLE PRECISION[]);
+DROP FUNCTION IF EXISTS mark_attendance(UUID, UUID, TEXT, NUMERIC, NUMERIC, NUMERIC);
 DROP FUNCTION IF EXISTS register_face(UUID, DOUBLE PRECISION[]);
 DROP FUNCTION IF EXISTS face_registration_status(UUID);
 DROP FUNCTION IF EXISTS delete_face_profile(UUID);
