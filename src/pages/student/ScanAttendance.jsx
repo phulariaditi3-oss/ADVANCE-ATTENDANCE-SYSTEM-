@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { isExpired, formatTime } from '../../lib/utils';
-import { COLLEGE_RADIUS_METERS, MAX_GPS_ACCURACY_METERS } from '../../lib/constants';
+import { COLLEGE_RADIUS_METERS, MAX_GPS_ACCURACY_METERS, MAX_ATTENDANCE_DISTANCE_METERS } from '../../lib/constants';
 import {
   ScanLine, MapPin, CheckCircle2, XCircle, ArrowLeft,
   Camera, Shield, Sparkles, Radio, Keyboard, Clock, Building2, User
@@ -46,7 +46,7 @@ export default function ScanAttendance() {
       const { data: session, error: sessionErr } = await supabase
         .from('sessions')
         .select(`
-          id, qr_token, status, expires_at, subject_name, department, year, semester,
+          id, qr_token, status, expires_at, subject_name, department, year, semester, attendance_type, session_type,
           teacher:teacher_id(name)
         `)
         .eq('qr_token', token)
@@ -118,7 +118,7 @@ export default function ScanAttendance() {
 
         if (accuracy > MAX_GPS_ACCURACY_METERS) {
           setStatus('error');
-          setErrorMsg(`Your GPS accuracy is too low (${Math.round(accuracy)}m). Please enable Location/GPS and try again.`);
+          setErrorMsg(`📍 GPS accuracy is too low (${Math.round(accuracy)}m). Please enable precise location and try again.`);
           return;
         }
 
@@ -127,8 +127,8 @@ export default function ScanAttendance() {
       },
       (err) => {
         setStatus('error');
-        if (err.code === 1) setErrorMsg('Please enable location permission to mark attendance.');
-        else if (err.code === 2) setErrorMsg('Unable to get your current location. Please check your GPS and try again.');
+        if (err.code === 1) setErrorMsg('📍 Location permission required. Please allow location access to mark attendance.');
+        else if (err.code === 2) setErrorMsg('Unable to detect your location. Please try again.');
         else setErrorMsg('Location request timed out. Please try again.');
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -156,7 +156,10 @@ export default function ScanAttendance() {
 
       setLocationDist(rpcData?.distance || 0);
       setStatus('success');
-      toast.success(`Attendance marked for ${sessionData.subject_name}`);
+      const displaySubject = sessionData.attendance_type === 'daily' 
+        ? `Daily Attendance - ${sessionData.session_type === 'morning' ? 'Morning' : 'Afternoon'}` 
+        : sessionData.subject_name;
+      toast.success(`Attendance marked for ${displaySubject}`);
     } catch (err) {
       setStatus('error');
       setErrorMsg(err.message || 'Verification failed. Attendance was not marked.');
@@ -299,7 +302,7 @@ export default function ScanAttendance() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-wider text-surface-500">Radius</p>
-                  <p className="text-[11px] font-bold text-surface-800 truncate">{COLLEGE_RADIUS_METERS}m of teacher</p>
+                  <p className="text-[11px] font-bold text-surface-800 truncate">Within {MAX_ATTENDANCE_DISTANCE_METERS}m of teacher</p>
                 </div>
               </div>
             </div>
@@ -337,7 +340,7 @@ export default function ScanAttendance() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-wider text-surface-500">Subject</p>
-                  <p className="text-sm font-bold text-surface-900">{sessionData.subject_name}</p>
+                  <p className="text-sm font-bold text-surface-900">{sessionData.attendance_type === 'daily' ? `Daily Attendance - ${sessionData.session_type === 'morning' ? 'Morning' : 'Afternoon'}` : sessionData.subject_name}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -387,7 +390,7 @@ export default function ScanAttendance() {
             </div>
             <h2 className="text-xl font-black text-surface-900">Checking your location...</h2>
             <p className="text-sm font-bold text-surface-500 mt-2 max-w-[240px]">
-              Verifying you are within {COLLEGE_RADIUS_METERS}m of your teacher
+              Verifying you are within {MAX_ATTENDANCE_DISTANCE_METERS}m of your teacher
             </p>
           </div>
         )}
@@ -407,7 +410,7 @@ export default function ScanAttendance() {
             
             <div className="p-6 text-center space-y-4">
               <div>
-                <p className="text-sm font-black text-surface-900">{sessionData.subject_name}</p>
+                <p className="text-sm font-black text-surface-900">{sessionData.attendance_type === 'daily' ? `Daily Attendance - ${sessionData.session_type === 'morning' ? 'Morning' : 'Afternoon'}` : sessionData.subject_name}</p>
                 <p className="text-xs font-bold text-surface-500 mt-0.5">Y{sessionData.year} S{sessionData.semester} · {sessionData.department}</p>
               </div>
 

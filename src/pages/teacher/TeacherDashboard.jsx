@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { calcAttendancePercentage } from '../../lib/utils';
+import { calcAttendancePercentage, getGreeting } from '../../lib/utils';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 import {
   QrCode, AlertTriangle, BookOpen, ArrowRight, CalendarClock, GraduationCap,
@@ -125,7 +125,7 @@ export default function TeacherDashboard() {
           <div className="space-y-2">
             <p className="eyebrow">Faculty Portal</p>
             <h1 className="text-2xl sm:text-3xl font-black text-surface-900 tracking-tight">
-              Good morning, {user?.name?.split(' ')[0] || 'Professor'} 👋
+              {getGreeting()}, {user?.name?.split(' ')[0] || 'Professor'} 👋
             </h1>
             <p className="text-sm font-medium text-surface-500 max-w-sm">
               Here's your teaching overview. Manage your classes and students.

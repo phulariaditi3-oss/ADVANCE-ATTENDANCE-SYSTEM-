@@ -28,11 +28,14 @@ import TakeAttendance from './pages/teacher/TakeAttendance';
 import SessionHistory from './pages/teacher/SessionHistory';
 import TeacherReports from './pages/teacher/TeacherReports';
 import TeacherLowAttendance from './pages/teacher/TeacherLowAttendance';
+import DailyAttendance from './pages/teacher/DailyAttendance';
+import DailyAttendanceReports from './pages/teacher/DailyAttendanceReports';
 
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
 import ScanAttendance from './pages/student/ScanAttendance';
 import AttendanceHistory from './pages/student/AttendanceHistory';
+import DailyAttendanceHistory from './pages/student/DailyAttendanceHistory';
 
 function AnimatedOutlet() {
   const location = useLocation();
@@ -111,6 +114,8 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="staff" element={<ManageStaff />} />
           <Route path="students" element={<ViewStudents />} />
+          <Route path="daily-attendance" element={<DailyAttendance />} />
+          <Route path="daily-reports" element={<DailyAttendanceReports />} />
           <Route path="attendance" element={<AttendanceStats />} />
           <Route path="low-attendance" element={<LowAttendance />} />
           <Route path="reports" element={<AdminReports />} />
@@ -128,6 +133,8 @@ export default function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="students" element={<ViewStudents />} />
+          <Route path="daily-attendance" element={<DailyAttendance />} />
+          <Route path="daily-reports" element={<DailyAttendanceReports />} />
           <Route path="attendance" element={<AttendanceStats />} />
           <Route path="low-attendance" element={<LowAttendance />} />
           <Route path="reports" element={<AdminReports />} />
@@ -146,6 +153,8 @@ export default function App() {
         >
           <Route index element={<TeacherDashboard />} />
           <Route path="take-attendance" element={<TakeAttendance />} />
+          <Route path="daily-attendance" element={<DailyAttendance />} />
+          <Route path="daily-reports" element={<DailyAttendanceReports />} />
           <Route path="sessions" element={<SessionHistory />} />
           <Route path="reports" element={<TeacherReports />} />
           <Route path="low-attendance" element={<TeacherLowAttendance />} />
@@ -163,6 +172,7 @@ export default function App() {
           <Route index element={<StudentDashboard />} />
           <Route path="scan" element={<ScanAttendance />} />
           <Route path="history" element={<AttendanceHistory />} />
+          <Route path="daily-history" element={<DailyAttendanceHistory />} />
         </Route>
 
         {/* Redirect Fallbacks */}

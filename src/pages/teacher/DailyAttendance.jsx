@@ -2,19 +2,22 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { YEARS, SEMESTER_TYPES, getSemesterFromYearAndType, getDeptLabel, TOKEN_EXPIRY_MINUTES, MAX_ATTENDANCE_DISTANCE_METERS } from '../../lib/constants';
-import { getSubjects } from '../../data/subjects';
 import { useToast } from '../../contexts/ToastContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { generateSecureToken, getExpiryTimestamp, getRemainingTime, formatTime } from '../../lib/utils';
-import { Play, Square, Users, Clock, CheckCircle2, ShieldAlert, QrCode, MapPin, Loader2 } from 'lucide-react';
+import { Play, Square, Users, Clock, ShieldAlert, QrCode, MapPin, Loader2, Sun, Sunset } from 'lucide-react';
 
-export default function TakeAttendance() {
+const SESSIONS = [
+  { value: 'morning',   label: 'Morning',   icon: Sun },
+  { value: 'afternoon', label: 'Afternoon', icon: Sunset },
+];
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+export default function DailyAttendance() {
   const { user } = useAuth();
   const toast = useToast();
 
-  // Departments this teacher is actually allowed to take attendance for.
-  // Server-side (create_attendance_session RPC) re-checks this too — the
-  // dropdown alone is not what enforces the restriction.
   const teachingDepartments = useMemo(
     () => (user?.teachingDepartments?.length ? user.teachingDepartments : [user?.department].filter(Boolean)),
     [user]
@@ -23,9 +26,9 @@ export default function TakeAttendance() {
   const [department, setDepartment] = useState(teachingDepartments[0] || '');
   const [year, setYear] = useState('');
   const [semType, setSemType] = useState('');
-  const [subject, setSubject] = useState('');
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [subjectsList, setSubjectsList] = useState([]);
+
+  const [date, setDate] = useState(todayISO());
+  const [sessionType, setSessionType] = useState('morning');
 
   const semester = year && semType ? getSemesterFromYearAndType(year, semType) : null;
 
@@ -39,8 +42,6 @@ export default function TakeAttendance() {
   const [locatingTeacher, setLocatingTeacher] = useState(false);
   const timerRef = useRef(null);
 
-  // Get the teacher's current device GPS position. Returns a promise that
-  // resolves to { lat, lng, accuracy } or rejects with a readable message.
   const getTeacherLocation = () => new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
       reject(new Error('Geolocation is not supported by your browser.'));
@@ -60,81 +61,16 @@ export default function TakeAttendance() {
     );
   });
 
-  // Load subjects whenever department/year/semester type all resolve to a semester
-  useEffect(() => {
-    if (department && year && semType && semester) {
-      fetchSubjectsFromDB();
-    } else {
-      setSubjectsList([]);
-      setSubject('');
-    }
-  }, [department, year, semType]);
-
-  const fetchSubjectsFromDB = async () => {
-    setLoadingSubjects(true);
-    setSubject('');
-    try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('department', department)
-        .eq('year', parseInt(year))
-        .eq('semester', parseInt(semester));
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setSubjectsList(data);
-      } else {
-        // Fall back to the bundled offline subject list for this exact
-        // department + year + semester combination.
-        const offline = getSubjects(department, parseInt(year), parseInt(semester));
-        const formatted = offline.map((name, i) => ({
-          id: `offline-${i}`,
-          name,
-          code: `${department}-${year}-${semester}-${i}`
-        }));
-        setSubjectsList(formatted);
-      }
-    } catch (err) {
-      const offline = getSubjects(department, parseInt(year), parseInt(semester));
-      const formatted = offline.map((name, i) => ({
-        id: `offline-${i}`,
-        name,
-        code: `${department}-${year}-${semester}-${i}`
-      }));
-      setSubjectsList(formatted);
-    }
-    setLoadingSubjects(false);
-  };
-
   const handleStartSession = async (e) => {
     e.preventDefault();
-    if (!department) {
-      toast.warning('Please select a department.');
+    if (!department || !year || !semType || !date || !sessionType) {
+      toast.warning('Please fill all fields.');
       return;
     }
-    if (!year) {
-      toast.warning('Please select a year.');
-      return;
-    }
-    if (!semType) {
-      toast.warning('Please select Odd or Even semester.');
-      return;
-    }
-    if (!subject) {
-      toast.warning('No subjects are available for this selection.');
-      return;
-    }
-
-    const selectedSubjObj = subjectsList.find(s => s.id === subject || s.name === subject);
-    const subjectName = selectedSubjObj ? selectedSubjObj.name : subject;
 
     const token = generateSecureToken(6);
     const expiresAt = getExpiryTimestamp(TOKEN_EXPIRY_MINUTES);
 
-    // Lock in the teacher's OWN current location — students must be within
-    // MAX_ATTENDANCE_DISTANCE_METERS (10m) of this exact spot.
     let teacherLocation;
     setLocatingTeacher(true);
     try {
@@ -147,63 +83,27 @@ export default function TakeAttendance() {
     setLocatingTeacher(false);
 
     try {
-      let finalSubjectId = null;
-      if (subject && !subject.startsWith('offline-')) {
-        finalSubjectId = subject;
-      } else if (subject.startsWith('offline-')) {
-        // Try to find or create the subject in the DB
-        const { data: existingSubj } = await supabase
-          .from('subjects')
-          .select('id')
-          .eq('code', selectedSubjObj.code)
-          .maybeSingle();
-
-        if (existingSubj) {
-          finalSubjectId = existingSubj.id;
-        } else {
-          const { data: newSubj, error: insertErr } = await supabase
-            .from('subjects')
-            .insert({
-              name: selectedSubjObj.name,
-              code: selectedSubjObj.code,
-              department,
-              year: parseInt(year),
-              semester: parseInt(semester)
-            })
-            .select()
-            .single();
-          if (newSubj) {
-            finalSubjectId = newSubj.id;
-          } else {
-            // Insert failed — proceed with null subject_id (RPC will handle)
-            console.warn('Could not persist offline subject:', insertErr);
-          }
-        }
-      }
-
-      // Server-side enforced: this RPC re-checks that the logged-in teacher
-      // is actually assigned to `department` before creating the session.
       const { data: rpcData, error: sessionErr } = await supabase.rpc('create_attendance_session', {
         p_teacher_id: user.id,
         p_department: department,
         p_year: parseInt(year),
         p_semester: parseInt(semester),
-        p_subject_id: finalSubjectId,
-        p_subject_name: subjectName,
+        p_subject_id: null,
+        p_subject_name: null,
         p_qr_token: token,
         p_expires_at: expiresAt,
         p_teacher_lat: teacherLocation.lat,
         p_teacher_lng: teacherLocation.lng,
         p_teacher_accuracy: teacherLocation.accuracy,
         p_radius_meters: MAX_ATTENDANCE_DISTANCE_METERS,
-        p_attendance_type: 'subject',
-        p_session_type: null,
-        p_session_date: new Date().toISOString().split('T')[0],
+        p_attendance_type: 'daily',
+        p_session_type: sessionType,
+        p_session_date: date
       });
 
       if (sessionErr) throw sessionErr;
       if (rpcData && rpcData.success === false) {
-        toast.error(rpcData.message || 'You are not assigned to this department.');
+        toast.error(rpcData.message || 'Error creating daily attendance session.');
         return;
       }
 
@@ -216,10 +116,13 @@ export default function TakeAttendance() {
         department: newSession.department,
         year: newSession.year,
         semester: newSession.semester,
-        subjectId: newSession.subject_id
+        attendanceType: 'daily',
+        sessionType: newSession.session_type
       });
       setQrValue(qrPayload);
 
+      // We won't filter purely by division here for students since division might not be on the student record in some setups,
+      // but if it is, we could. We'll fetch all students for the year/sem.
       const { data: classSt } = await supabase
         .from('students')
         .select('id, name, roll_no, enrollment_no, gender')
@@ -230,15 +133,13 @@ export default function TakeAttendance() {
       setAllClassStudents(classSt || []);
       setPresentStudents([]);
 
-      toast.success('Attendance session started!');
+      toast.success('Daily Attendance session started!');
     } catch (err) {
-      const msg = err?.message || err?.details || 'Failed to start session. Please try again.';
-      toast.error(msg);
-      console.error('Session error:', err);
+      toast.error('Failed to start session.');
+      console.error(err);
     }
   };
 
-  // Timer & Realtime listener setup
   useEffect(() => {
     if (!session) return;
 
@@ -246,7 +147,6 @@ export default function TakeAttendance() {
       const remaining = getRemainingTime(session.expires_at);
       setTimeLeft(remaining);
 
-      // Compute total seconds remaining
       const diffMs = new Date(session.expires_at) - new Date();
       const secs = Math.max(0, Math.floor(diffMs / 1000));
       setSecondsRemaining(secs);
@@ -259,7 +159,7 @@ export default function TakeAttendance() {
     fetchPresentStudents();
 
     const subscription = supabase
-      .channel(`attendance_session_${session.id}`)
+      .channel(`daily_attendance_session_${session.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -322,9 +222,6 @@ export default function TakeAttendance() {
 
       toast.success('Attendance session closed.');
       setSession(null);
-      setYear('');
-      setSemType('');
-      setSubject('');
     } catch (err) {
       toast.error('Failed to close session.');
     }
@@ -336,40 +233,47 @@ export default function TakeAttendance() {
     <div className="page-enter space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-200 pb-4">
         <div>
-          <h1 className="text-2xl font-black text-surface-900 tracking-tight">QR Attendance</h1>
+          <h1 className="text-2xl font-black text-surface-900 tracking-tight">Daily Attendance</h1>
           <p className="text-sm font-bold text-surface-600 mt-1">
-            Generate a dynamic QR for {teachingDepartments.map(getDeptLabel).join(', ')}
+            Generate QR for Daily Morning/Afternoon Attendance
           </p>
         </div>
       </div>
 
       {!session ? (
-        /* Configuration Card */
-        <div className="card p-6 sm:p-8 max-w-xl mx-auto space-y-6">
+        <div className="card p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
           <h2 className="text-xl font-black text-surface-900 flex items-center gap-2">
             <Play size={20} className="text-primary-500" />
             Session Setup
           </h2>
           
           <form onSubmit={handleStartSession} className="space-y-5">
-            <div>
-              <label className="label">Department</label>
-              <select
-                value={department}
-                onChange={e => { setDepartment(e.target.value); setYear(''); setSemType(''); }}
-                className="select"
-                required
-              >
-                {teachingDepartments.length === 0 && <option value="">No departments assigned</option>}
-                {teachingDepartments.map(code => (
-                  <option key={code} value={code}>{getDeptLabel(code)}</option>
-                ))}
-              </select>
-              {teachingDepartments.length === 0 && (
-                <p className="text-xs font-bold text-danger-600 mt-1.5">
-                  You are not assigned to any department yet. Contact your admin.
-                </p>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">Department</label>
+                <select
+                  value={department}
+                  onChange={e => { setDepartment(e.target.value); setYear(''); setSemType(''); }}
+                  className="select"
+                  required
+                >
+                  {teachingDepartments.length === 0 && <option value="">No departments assigned</option>}
+                  {teachingDepartments.map(code => (
+                    <option key={code} value={code}>{getDeptLabel(code)}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="label">Date</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -401,30 +305,35 @@ export default function TakeAttendance() {
               </div>
             </div>
 
-            {semester && (
-              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-primary-50 border border-primary-100">
-                <span className="text-[10px] font-black uppercase tracking-wider text-primary-500">Semester</span>
-                <span className="text-sm font-black text-primary-700">Semester {semester}</span>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="label">Session</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {SESSIONS.map(s => {
+                    const Icon = s.icon;
+                    return (
+                      <button
+                        key={s.value}
+                        type="button"
+                        onClick={() => setSessionType(s.value)}
+                        className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-all font-bold text-sm ${
+                          sessionType === s.value 
+                            ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm' 
+                            : 'border-surface-200 bg-white text-surface-600 hover:bg-surface-50'
+                        }`}
+                      >
+                        <Icon size={16} className={sessionType === s.value ? 'text-primary-500' : ''} />
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
-
-            <div>
-              <label className="label">Subject</label>
-              <select
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-                className="select"
-                disabled={!semester || loadingSubjects}
-                required
-              >
-                <option value="">{loadingSubjects ? 'Loading...' : subjectsList.length === 0 && semester ? 'No subjects available' : 'Select Subject'}</option>
-                {subjectsList.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-              </select>
             </div>
 
             <button
               type="submit"
-              disabled={teachingDepartments.length === 0 || locatingTeacher}
+              disabled={teachingDepartments.length === 0 || locatingTeacher || !semester}
               className="btn-primary w-full justify-center py-3 text-sm font-black tracking-widest uppercase mt-4 shadow-[0_5px_15px_rgba(217,70,239,0.4)] disabled:opacity-50"
             >
               {locatingTeacher ? (
@@ -442,14 +351,15 @@ export default function TakeAttendance() {
         /* Live QR Code Display Screen */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-scale-in">
           
-          {/* QR Display Card */}
           <div className="card p-6 flex flex-col items-center text-center lg:col-span-1 shadow-[4px_4px_15px_rgba(175,100,223,0.3),-4px_-4px_15px_rgba(255,255,255,0.9)] border-2 border-primary-500/20">
             
             <div className="w-full bg-surface-50 shadow-inner p-4 rounded-xl mb-6">
               <span className="text-[10px] font-black uppercase tracking-wider text-white bg-primary-500 px-2 py-0.5 rounded-full shadow-sm mb-2 inline-block">
-                Active Window
+                Active Daily Session
               </span>
-              <h2 className="text-lg font-black text-surface-900 leading-tight">{session.subject_name}</h2>
+              <h2 className="text-lg font-black text-surface-900 leading-tight">
+                Daily Attendance - {session.session_type === 'morning' ? 'Morning' : 'Afternoon'}
+              </h2>
               <p className="text-[10px] text-surface-600 font-bold mt-1">
                 {formatTime(session.created_at)} – {formatTime(session.expires_at)}
               </p>
@@ -470,7 +380,6 @@ export default function TakeAttendance() {
               )}
             </div>
 
-            {/* Countdown */}
             <div className={`w-full p-3 rounded-xl mb-6 shadow-inner transition-colors flex items-center justify-center gap-3 ${
               isUnderOneMin ? 'bg-danger-500/20 text-danger-800 animate-pulse' : 'bg-white/40 text-surface-700'
             }`}>
@@ -488,7 +397,6 @@ export default function TakeAttendance() {
             </button>
           </div>
 
-          {/* Live Roster List */}
           <div className="card p-6 lg:col-span-2 flex flex-col">
             <div className="flex items-center justify-between pb-4 border-b border-surface-200/50 mb-4">
               <h3 className="text-lg font-black text-surface-900 flex items-center gap-2">
@@ -521,7 +429,7 @@ export default function TakeAttendance() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 text-accent-500 font-black text-xs">
-                      <CheckCircle2 size={16} /> Present
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Present
                     </div>
                   </div>
                 ))}

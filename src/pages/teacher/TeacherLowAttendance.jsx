@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { LOW_ATTENDANCE_THRESHOLD } from '../../lib/constants';
 import { calcAttendancePercentage } from '../../lib/utils';
-import { AlertTriangle, Phone, Search } from 'lucide-react';
+import { AlertTriangle, Phone, Search, MessageSquare } from 'lucide-react';
 
 export default function TeacherLowAttendance() {
   const { user } = useAuth();
@@ -170,16 +170,34 @@ export default function TeacherLowAttendance() {
                       <span className="badge badge-danger">{s.percentage}%</span>
                     </td>
                     <td>
-                      <span className="flex items-center gap-1 text-xs font-mono text-surface-700">
-                        <Phone size={12} className="text-surface-400" />
-                        {s.student_mobile}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-surface-700">
+                          {s.student_mobile}
+                        </span>
+                        <div className="flex gap-1">
+                          <a href={`tel:+91${s.student_mobile}`} className="p-1.5 rounded-md bg-surface-100 hover:bg-surface-200 text-surface-600 transition-colors" title="Call">
+                            <Phone size={14} />
+                          </a>
+                          <a href={`sms:+91${s.student_mobile}`} className="p-1.5 rounded-md bg-surface-100 hover:bg-surface-200 text-surface-600 transition-colors" title="SMS">
+                            <MessageSquare size={14} />
+                          </a>
+                        </div>
+                      </div>
                     </td>
                     <td>
-                      <span className="flex items-center gap-1 text-xs font-mono text-primary-600 font-bold">
-                        <Phone size={12} />
-                        {s.parent_mobile}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-primary-600 font-bold">
+                          {s.parent_mobile}
+                        </span>
+                        <div className="flex gap-1">
+                          <a href={`tel:+91${s.parent_mobile}`} className="p-1.5 rounded-md bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors" title="Call Parent">
+                            <Phone size={14} />
+                          </a>
+                          <a href={`sms:+91${s.parent_mobile}`} className="p-1.5 rounded-md bg-primary-50 hover:bg-primary-100 text-primary-600 transition-colors" title="SMS Parent">
+                            <MessageSquare size={14} />
+                          </a>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))

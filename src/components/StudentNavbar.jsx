@@ -2,14 +2,15 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.svg';
-import { LayoutDashboard, ScanLine, History, LogOut, Menu, X, ScanFace } from 'lucide-react';
+import { LayoutDashboard, ScanLine, History, LogOut, Menu, X, ScanFace, ClipboardList } from 'lucide-react';
 import { useState } from 'react';
 import { INSTITUTE_SHORT } from '../lib/constants';
 
 const studentLinks = [
-  { to: '/student',                  icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/student/scan',             icon: ScanLine,         label: 'Scan QR' },
-  { to: '/student/history',          icon: History,          label: 'Attendance' },
+  { to: '/student',               icon: LayoutDashboard, label: 'Dashboard',        end: true },
+  { to: '/student/scan',          icon: ScanLine,         label: 'Scan QR' },
+  { to: '/student/history',       icon: History,          label: 'QR Attendance' },
+  { to: '/student/daily-history', icon: ClipboardList,    label: 'Daily Record' },
 ];
 
 export default function StudentNavbar() {

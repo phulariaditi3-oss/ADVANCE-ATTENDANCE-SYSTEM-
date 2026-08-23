@@ -197,3 +197,13 @@ export function truncate(str, max = 30) {
 export function sortByRollNo(arr) {
   return [...arr].sort((a, b) => (a.roll_no || 0) - (b.roll_no || 0));
 }
+
+/**
+ * Get dynamic greeting based on current time
+ */
+export function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}

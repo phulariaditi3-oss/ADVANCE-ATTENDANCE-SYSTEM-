@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { calcAttendancePercentage } from '../../lib/utils';
+import { calcAttendancePercentage, getGreeting } from '../../lib/utils';
 import { LOW_ATTENDANCE_THRESHOLD } from '../../lib/constants';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
-import { AlertCircle, ScanLine, CalendarClock, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, ScanLine, CalendarClock, CheckCircle2, Sun, Sunset, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const container = {
@@ -22,11 +22,30 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ attended: 0, total: 0, percentage: 0, absent: 0 });
   const [recentLogs, setRecentLogs] = useState([]);
+  const [todayDaily, setTodayDaily] = useState({ morning: null, afternoon: null });
+
   useEffect(() => {
     if (user?.id) {
       fetchStudentStats();
+      fetchTodayDailyAttendance();
     }
   }, [user]);
+
+  const fetchTodayDailyAttendance = async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from('daily_attendance')
+        .select('session_type, status')
+        .eq('student_id', user.id)
+        .eq('date', today);
+      const m = data?.find(r => r.session_type === 'morning');
+      const a = data?.find(r => r.session_type === 'afternoon');
+      setTodayDaily({ morning: m?.status ?? null, afternoon: a?.status ?? null });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchStudentStats = async () => {
     try {
@@ -91,7 +110,7 @@ export default function StudentDashboard() {
           <div className="space-y-2">
             <p className="eyebrow">Student Portal</p>
             <h1 className="text-2xl sm:text-3xl font-black text-surface-900 tracking-tight">
-              Good morning, {user?.name?.split(' ')[0] || 'Student'} 👋
+              {getGreeting()}, {user?.name?.split(' ')[0] || 'Student'} 👋
             </h1>
             <p className="text-sm font-medium text-surface-500 max-w-sm">
               Track your attendance, classes, and academic activity from one place.
@@ -251,6 +270,59 @@ export default function StudentDashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Today's Daily Attendance */}
+      <motion.div variants={item} className="card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="section-title !text-lg flex items-center gap-2">
+              <ClipboardList size={18} className="text-primary-500" /> Today's Daily Attendance
+            </h2>
+            <p className="section-subtitle">
+              {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <Link to="/student/daily-history" className="text-xs font-bold text-primary-500 hover:text-primary-700 transition-colors">
+            View History →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { type: 'morning',   label: 'Morning',   Icon: Sun,    colorBase: 'amber' },
+            { type: 'afternoon', label: 'Afternoon',  Icon: Sunset, colorBase: 'indigo' },
+          ].map(({ type, label, Icon, colorBase }) => {
+            const status = todayDaily[type];
+            const notTaken = status === null;
+            return (
+              <div
+                key={type}
+                className={`rounded-2xl p-4 border flex items-center gap-3
+                  ${notTaken ? 'bg-surface-50 border-surface-200'
+                    : status === 'present' ? 'bg-emerald-50 border-emerald-200'
+                    : 'bg-danger-50 border-danger-100'}`}
+              >
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0
+                  ${notTaken ? `bg-${colorBase}-100` : status === 'present' ? 'bg-emerald-100' : 'bg-danger-100'}`}
+                >
+                  <Icon size={20} className={
+                    notTaken ? `text-${colorBase}-400`
+                      : status === 'present' ? 'text-emerald-600' : 'text-danger-600'
+                  } />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-surface-500">{label}</p>
+                  <p className={`text-sm font-black mt-0.5
+                    ${notTaken ? 'text-surface-400'
+                      : status === 'present' ? 'text-emerald-700' : 'text-danger-700'}`}
+                  >
+                    {notTaken ? '⏳ Not Taken' : status === 'present' ? '🟢 Present' : '🔴 Absent'}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

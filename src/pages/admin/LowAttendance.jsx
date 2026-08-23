@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDeptLabel, LOW_ATTENDANCE_THRESHOLD } from '../../lib/constants';
-import { AlertTriangle, Phone, Search, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertTriangle, Phone, Search, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import { calcAttendancePercentage } from '../../lib/utils';
 
 export default function LowAttendance() {
@@ -184,16 +184,34 @@ export default function LowAttendance() {
                       <span className="badge badge-danger font-black">{s.percentage}%</span>
                     </td>
                     <td>
-                      <span className="flex items-center gap-1.5 text-sm font-semibold text-surface-600">
-                        <Phone size={13} className="text-surface-400" />
-                        {s.student_mobile}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-surface-600">
+                          {s.student_mobile}
+                        </span>
+                        <div className="flex gap-1">
+                          <a href={`tel:+91${s.student_mobile}`} className="p-1.5 rounded-md bg-surface-100 hover:bg-surface-200 text-surface-600 transition-colors" title="Call">
+                            <Phone size={14} />
+                          </a>
+                          <a href={`sms:+91${s.student_mobile}`} className="p-1.5 rounded-md bg-surface-100 hover:bg-surface-200 text-surface-600 transition-colors" title="SMS">
+                            <MessageSquare size={14} />
+                          </a>
+                        </div>
+                      </div>
                     </td>
                     <td>
-                      <span className="flex items-center gap-1.5 text-sm font-bold text-danger-600">
-                        <Phone size={13} className="text-danger-400" />
-                        {s.parent_mobile}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-danger-600">
+                          {s.parent_mobile}
+                        </span>
+                        <div className="flex gap-1">
+                          <a href={`tel:+91${s.parent_mobile}`} className="p-1.5 rounded-md bg-danger-50 hover:bg-danger-100 text-danger-600 transition-colors" title="Call Parent">
+                            <Phone size={14} />
+                          </a>
+                          <a href={`sms:+91${s.parent_mobile}`} className="p-1.5 rounded-md bg-danger-50 hover:bg-danger-100 text-danger-600 transition-colors" title="SMS Parent">
+                            <MessageSquare size={14} />
+                          </a>
+                        </div>
+                      </div>
                     </td>
                   </motion.tr>
                 ))

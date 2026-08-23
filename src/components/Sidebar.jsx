@@ -14,33 +14,41 @@ import {
   Menu,
   X,
   ChevronLeft,
+  ClipboardList,
+  FileDown,
 } from 'lucide-react';
 
 const adminLinks = [
-  { to: '/admin',               icon: LayoutDashboard, label: 'Dashboard',        end: true },
-  { to: '/admin/staff',         icon: Users,           label: 'Manage Staff & HODs' },
-  { to: '/admin/students',      icon: GraduationCap,   label: 'View Students' },
-  { to: '/admin/attendance',    icon: FileBarChart,    label: 'Attendance Stats' },
-  { to: '/admin/low-attendance',icon: AlertTriangle,   label: 'Low Attendance' },
-  { to: '/admin/reports',       icon: FileBarChart,    label: 'Reports' },
+  { to: '/admin',                       icon: LayoutDashboard, label: 'Dashboard',         end: true },
+  { to: '/admin/staff',                 icon: Users,           label: 'Manage Staff & HODs' },
+  { to: '/admin/students',             icon: GraduationCap,   label: 'View Students' },
+  { to: '/admin/daily-attendance',     icon: ClipboardList,   label: 'Daily Attendance' },
+  { to: '/admin/daily-reports',        icon: FileDown,        label: 'Daily Reports' },
+  { to: '/admin/attendance',           icon: FileBarChart,    label: 'Attendance Stats' },
+  { to: '/admin/low-attendance',       icon: AlertTriangle,   label: 'Low Attendance' },
+  { to: '/admin/reports',              icon: FileBarChart,    label: 'Reports' },
 ];
 
 const hodLinks = [
-  { to: '/hod',                 icon: LayoutDashboard, label: 'Dashboard',        end: true },
-  { to: '/hod/take-attendance', icon: QrCode,          label: 'Take Attendance' },
-  { to: '/hod/sessions',        icon: History,         label: 'Session History' },
-  { to: '/hod/students',        icon: GraduationCap,   label: 'Dept Students' },
-  { to: '/hod/attendance',      icon: FileBarChart,    label: 'Attendance Stats' },
-  { to: '/hod/low-attendance',  icon: AlertTriangle,   label: 'Low Attendance' },
-  { to: '/hod/reports',         icon: FileBarChart,    label: 'Reports' },
+  { to: '/hod',                        icon: LayoutDashboard, label: 'Dashboard',        end: true },
+  { to: '/hod/take-attendance',        icon: QrCode,          label: 'QR Attendance' },
+  { to: '/hod/daily-attendance',       icon: ClipboardList,   label: 'Daily Attendance' },
+  { to: '/hod/daily-reports',          icon: FileDown,        label: 'Daily Reports' },
+  { to: '/hod/sessions',               icon: History,         label: 'Session History' },
+  { to: '/hod/students',               icon: GraduationCap,   label: 'Dept Students' },
+  { to: '/hod/attendance',             icon: FileBarChart,    label: 'Attendance Stats' },
+  { to: '/hod/low-attendance',         icon: AlertTriangle,   label: 'Low Attendance' },
+  { to: '/hod/reports',                icon: FileBarChart,    label: 'Reports' },
 ];
 
 const teacherLinks = [
-  { to: '/teacher',                  icon: LayoutDashboard, label: 'Dashboard',        end: true },
-  { to: '/teacher/take-attendance',  icon: QrCode,          label: 'Take Attendance' },
-  { to: '/teacher/sessions',         icon: History,         label: 'Session History' },
-  { to: '/teacher/reports',          icon: FileBarChart,    label: 'Reports' },
-  { to: '/teacher/low-attendance',   icon: AlertTriangle,   label: 'Low Attendance' },
+  { to: '/teacher',                      icon: LayoutDashboard, label: 'Dashboard',        end: true },
+  { to: '/teacher/take-attendance',      icon: QrCode,          label: 'QR Attendance' },
+  { to: '/teacher/daily-attendance',     icon: ClipboardList,   label: 'Daily Attendance' },
+  { to: '/teacher/daily-reports',        icon: FileDown,        label: 'Daily Reports' },
+  { to: '/teacher/sessions',             icon: History,         label: 'Session History' },
+  { to: '/teacher/reports',              icon: FileBarChart,    label: 'Reports' },
+  { to: '/teacher/low-attendance',       icon: AlertTriangle,   label: 'Low Attendance' },
 ];
 
 export default function Sidebar() {

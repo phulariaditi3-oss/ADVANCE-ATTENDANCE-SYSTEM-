@@ -5,6 +5,9 @@ export const DEPARTMENTS = [
   { value: 'EJ', label: 'Electronics & Telecommunication' },
 ];
 
+// Divisions used for Daily Attendance grouping
+export const DIVISIONS = ['A', 'B', 'C', 'D'];
+
 export const YEARS = [
   { value: 1, label: 'First Year' },
   { value: 2, label: 'Second Year' },
@@ -46,7 +49,11 @@ export const LOW_ATTENDANCE_THRESHOLD = 75;
 // GPS Settings
 export const COLLEGE_LATITUDE = 19.2557824;
 export const COLLEGE_LONGITUDE = 76.7822683;
-export const COLLEGE_RADIUS_METERS = 20; // students must be within this many meters of their teacher's device
+// MAX_ATTENDANCE_DISTANCE_METERS — the single source of truth for QR proximity.
+// Must match the value hardcoded in migration_strict_10m_gps.sql (v_max_distance_meters := 10).
+export const MAX_ATTENDANCE_DISTANCE_METERS = 10;
+/** @deprecated Use MAX_ATTENDANCE_DISTANCE_METERS */
+export const COLLEGE_RADIUS_METERS = MAX_ATTENDANCE_DISTANCE_METERS;
 export const MAX_GPS_ACCURACY_METERS = 100;
 
 // Admin credentials live in soft-copy (code / env). Change here to update admin login.
