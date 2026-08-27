@@ -33,22 +33,26 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Admin login with soft-copy email + password
+  // Admin login via Supabase Auth
   const loginAdmin = useCallback(async (email, password) => {
-    const emailOk = (email || '').toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
-    const passOk = password === ADMIN_PASSWORD;
-    if (emailOk && passOk) {
-      const adminData = {
-        id: 'admin',
-        name: 'Administrator',
-        email: ADMIN_EMAIL,
-        role: 'admin',
-      };
-      saveSession(adminData, 'admin');
-      return { success: true };
-    }
-    return { success: false, error: 'Invalid admin email or password' };
-  }, [saveSession]);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: (email || '').toLowerCase().trim(),
+      password,
+    });
 
+    if (error || !data.user) {
+      return { success: false, error: 'Invalid admin email or password' };
+    }
+
+    const adminData = {
+      id: data.user.id,
+      name: 'Administrator',
+      email: data.user.email,
+      role: 'admin',
+    };
+    saveSession(adminData, 'admin');
+    return { success: true };
+  }, [saveSession]);
   // Staff / HOD login
   const loginStaff = useCallback(async (staffId, email, password) => {
     try {
