@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { hashPassword, verifyPassword } from '../lib/utils';
-import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../lib/constants';
 
 const AuthContext = createContext(null);
 
@@ -32,7 +31,6 @@ export function AuthProvider({ children }) {
     localStorage.setItem('sspi_auth', JSON.stringify({ user: userData, role: userRole }));
   }, []);
 
-  // Admin login with soft-copy email + password
   // Admin login via Supabase Auth
   const loginAdmin = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -53,6 +51,7 @@ export function AuthProvider({ children }) {
     saveSession(adminData, 'admin');
     return { success: true };
   }, [saveSession]);
+
   // Staff / HOD login
   const loginStaff = useCallback(async (staffId, email, password) => {
     try {
